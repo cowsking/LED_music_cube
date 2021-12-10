@@ -1,151 +1,103 @@
-import math
-
-import matplotlib.pyplot as plt
-import librosa.display
+import pandas as pd
 import numpy as np
+# import librosa
+avg_bass = 0
+bass_trigger = -30
+# def clamp(min_value, max_value, value):
+#     if value < min_value:
+#         return 0
+#     if value > max_value:
+#         return 6
+#     differences = max_value - min_value
+#     res = int( -value / differences * 6)
+#     return res
 
+# def get_decibel(target_time, freq):
+#     return spectrogram[int(freq * frequencies_index_ratio)][int(target_time * time_index_ratio)]
 
-# binary search
-import pygame
+file_list = ['test']
+for filename in file_list:
 
+    spectrogram = np.array(pd.read_csv(filename+'/spectrogram.csv',header=None))
+    # time_series, sample_rate = librosa.load(filename)  # getting information from the file
+    times = pd.read_csv(filename+'/times.csv',header=None).values
+    frequencies = pd.read_csv(filename+'/frequencies.csv',header=None).values
+    time_index_ratio = len(times)/times[len(times) - 1]
+    frequencies_index_ratio = len(frequencies)/frequencies[len(frequencies)-1]
 
+    bars = []
+    frequencies = np.arange(100, 8000, 1400)
+# r = len(frequencies)
+# print(frequencies)
 
+    cube = np.zeros((6,6,6))
+    import time
+    start_time = time.time()
+    running = True
+    time_dif = time.time()-start_time
+    count = 1
+    while time_dif<12:
+        avg_bass = 0
+        time_dif = time.time()-start_time
+        if time_dif > count:
+            #beat
+            for freq in range(50,120):
+                avg_bass += get_decibel(time_dif, freq)
+            avg_bass /= 70
+            if avg_bass > bass_trigger:
+                print('beat')
+            #freqs
+            cube = np.roll(cube, -1, axis=0)
+            # area = np.zeros((6,6))
+            # ind = 0
+            # for freq in frequencies:
+            #     decibel = get_decibel(time_dif, freq)
+            #     num = clamp(-80, 0, decibel)
+            #     # print(decibel,num)
+            #     for i in range(num):
+            #         area[i][ind] = 1
+            #     ind += 1
+            # cube[5] = area
+            # print(cube)
+            # count += 0.2
+    
 
-
-
-def translate(xy, offset):
-    return xy[0] + offset[0], xy[1] + offset[1]
-
-
-def clamp(min_value, max_value, value):
-
-    if value < min_value:
-        return min_value
-
-    if value > max_value:
-        return max_value
-
-    return value
 
 
 class AudioAnalyzer:
 
-    def __init__(self):
+    def __init__(self,name):
 
-        self.frequencies_index_ratio = 0  # array for frequencies
-        self.time_index_ratio = 0  # array of time periods
-        self.spectrogram = None  # a matrix that contains decibel values according to frequency and time indexes
+        self.name = name
+        self.avg_bass = 0
+        self.bass_trigger = -30
+        self.time = 0
+        self.spectrogram = np.array(pd.read_csv(name+'/spectrogram.csv',header=None))
+        # time_series, sample_rate = librosa.load(filename)  # getting information from the file
+        times = pd.read_csv(name+'/times.csv',header=None).values
+        frequencies = pd.read_csv(name+'/frequencies.csv',header=None).values
+        time_index_ratio = len(times)/times[len(times) - 1]
+        frequencies_index_ratio = len(frequencies)/frequencies[len(frequencies)-1]
 
-    def load(self, filename):
+    def clamp(min_value, max_value, value):
+        if value < min_value:
+            return 0
+        if value > max_value:
+            return 6
 
-        time_series, sample_rate = librosa.load(filename)  # getting information from the file
+    def get_decibel(target_time, freq):
+        return self.spectrogram[int(self.freq * self.frequencies_index_ratio)][int(target_time * self.time_index_ratio)]
 
-        # getting a matrix which contains amplitude values according to frequency and time indexes
-        stft = np.abs(librosa.stft(time_series, hop_length=512, n_fft=2048*4))
-
-        self.spectrogram = librosa.amplitude_to_db(stft, ref=np.max)  # converting the matrix to decibel matrix
-
-        frequencies = librosa.core.fft_frequencies(n_fft=2048*4)  # getting an array of frequencies
-
-        # getting an array of time periodic
-        times = librosa.core.frames_to_time(np.arange(self.spectrogram.shape[1]), sr=sample_rate, hop_length=512, n_fft=2048*4)
-
-        self.time_index_ratio = len(times)/times[len(times) - 1]
-
-        self.frequencies_index_ratio = len(frequencies)/frequencies[len(frequencies)-1]
-
-
-
-
-    def show(self):
-
-        librosa.display.specshow(self.spectrogram,
-                                 y_axis='log', x_axis='time')
-
-        plt.title('spectrogram')
-        plt.colorbar(format='%+2.0f dB')
-        plt.tight_layout()
-        plt.show()
-
-    def get_decibel(self, target_time, freq):
-
-        return self.spectrogram[int(freq*self.frequencies_index_ratio)][int(target_time*self.time_index_ratio)]
-
-        # returning the current decibel according to the indexes which found by binary search
-        # return self.spectrogram[bin_search(self.frequencies, freq), bin_search(self.times, target_time)]
-
-    def get_decibel_array(self, target_time, freq_arr):
-
-        arr = []
-
-        for f in freq_arr:
-            arr.append(self.get_decibel(target_time,f))
-
-        return arr
-
-
-class AudioBar:
-
-    def __init__(self, x, y, freq, color, width=50, min_height=10, max_height=100, min_decibel=-80, max_decibel=0):
-
-        self.x, self.y, self.freq = x, y, freq
-
-        self.color = color
-
-        self.width, self.min_height, self.max_height = width, min_height, max_height
-
-        self.height = min_height
-
-        self.min_decibel, self.max_decibel = min_decibel, max_decibel
-
-        self.__decibel_height_ratio = (self.max_height - self.min_height)/(self.max_decibel - self.min_decibel)
-
-    def update(self, dt, decibel):
-
-        desired_height = decibel * self.__decibel_height_ratio + self.max_height
-
-        speed = (desired_height - self.height)/0.1
-
-        self.height += speed * dt
-
-        self.height = clamp(self.min_height, self.max_height, self.height)
-
-    def render(self, screen):
-
-        pygame.draw.rect(screen, self.color, (self.x, self.y + self.max_height - self.height, self.width, self.height))
-
-class AverageAudioBar(AudioBar):
-
-    def __init__(self, x, y, rng, color, width=50, min_height=10, max_height=100, min_decibel=-80, max_decibel=0):
-        super().__init__(x, y, 0, color, width, min_height, max_height, min_decibel, max_decibel)
-
-        self.rng = rng
-
-        self.avg = 0
-
-    def update_all(self, dt, time, analyzer):
-
-        self.avg = 0
-
-        for i in self.rng:
-            self.avg += analyzer.get_decibel(time, i)
-            # print(i, self.avg)
-        self.avg /= len(self.rng)
-        # print('time', time, self.avg)
-        self.update(dt, self.avg)
-
-
-
-    def render(self, screen):
-
-        pygame.draw.polygon(screen, self.color, self.rect.points)
-
-    def render_c(self, screen, color):
-
-        pygame.draw.polygon(screen, color, self.rect.points)
-
- 
-
-
-    def draw(self,screen):
-        pygame.draw.polygon(screen, (255,255, 0), self.points)
+    def set_time(time):
+        self.time = time
+    
+    def area_generation(frequencies):
+        area = np.zeros((6,6))
+        ind = 0
+        for freq in frequencies:
+            decibel = get_decibel(time_dif, freq)
+            num = clamp(-80, 0, decibel)
+            for i in range(num):
+                area[i][ind] = 1
+            ind += 1
+        return area
