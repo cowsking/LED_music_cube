@@ -1,11 +1,15 @@
 import librosa
 import numpy as np
 import pygame
+import os
 from AudioAnalyzer import *
 avg_bass = 0
 bass_trigger = -30
 bass_trigger_started = 0
 analyzer = AudioAnalyzer()
+
+# os.putenv('SDL_VIDEODRIVER', 'fbcon')
+# os.putenv('SDL_FBDEV', '/dev/fb0')
 
 bass = {"start": 50, "stop": 100, "count": 12}
 
@@ -65,18 +69,22 @@ def clamp(min_value, max_value, value):
     return value
 
 
+print('process 1')
 
+# filename = "Armageddon.mp3"
 
-filename = "Armageddon.mp3"
+filename = "test.mp3"
 analyzer.load(filename)
 time_series, sample_rate = librosa.load(filename)  # getting information from the file
 
 # getting a matrix which contains amplitude values according to frequency and time indexes
 stft = np.abs(librosa.stft(time_series, hop_length=512, n_fft=2048*4))
+print('stft 1')
 
 spectrogram = librosa.amplitude_to_db(stft, ref=np.max)  # converting the matrix to decibel matrix
 
 frequencies = librosa.core.fft_frequencies(n_fft=2048*4)  # getting an array of frequencies
+print('frequencies')
 
 # getting an array of time periodic
 times = librosa.core.frames_to_time(np.arange(spectrogram.shape[1]), sr=sample_rate, hop_length=512, n_fft=2048*4)
@@ -85,6 +93,7 @@ time_index_ratio = len(times)/times[len(times) - 1]
 
 frequencies_index_ratio = len(frequencies)/frequencies[len(frequencies)-1]
 
+print(stft)
 
 def get_decibel(target_time, freq):
     return spectrogram[int(freq * frequencies_index_ratio)][int(target_time * time_index_ratio)]
@@ -94,12 +103,15 @@ pygame.init()
 
 infoObject = pygame.display.Info()
 
-screen_w = int(infoObject.current_w/2.5)
-screen_h = int(infoObject.current_w/2.5)
 
+
+screen_w = int(320)
+screen_h = int(240)
 # Set up the drawing window
 screen = pygame.display.set_mode([screen_w, screen_h])
 
+
+print('process 2')
 
 bars = []
 
@@ -126,6 +138,8 @@ for g in tmp_bars:
 
     beats.append(gr)
 
+print('process 3')
+
 t = pygame.time.get_ticks()
 getTicksLastFrame = t
 
@@ -133,6 +147,8 @@ pygame.mixer.music.load(filename)
 pygame.mixer.music.play(0)
 
 # Run until the user asks to quit
+print('process 4')
+
 running = True
 while running:
     avg_bass = 0
@@ -157,12 +173,11 @@ while running:
     for b in beats[0]:
         avg_bass += b.avg
     avg_bass /= len(beats[0])
-    if avg_bass > bass_trigger:
-        print('above', avg_bass)
-    else:
-        print('give up')
+    # if avg_bass > bass_trigger:
+    #     print('above', avg_bass)
+    # else:
+    #     print('give up')
     # Flip the display
     pygame.display.flip()
 
-# Done! Time to quit.
 pygame.quit()
