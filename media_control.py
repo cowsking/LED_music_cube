@@ -1,19 +1,25 @@
 import dbus, dbus.mainloop.glib, sys
 from gi.repository import GLib
-
+def set_pos(value):
+    global pos 
+    pos = value 
+def set_name(value):
+    global name 
+    name = value 
 def on_property_changed(interface, changed, invalidated):
     if interface != 'org.bluez.MediaPlayer1':
         return
     for prop, value in changed.items():
         if prop == 'Position':
-            print(value)
+            set_pos(value)
         if prop == 'Status':
             print('Playback Status: {}'.format(value))
+        # elif prop == 'Track':
+        #     print('Music Info:')
+        #     for key in ('Title', 'Artist', 'Album'):
+        #         print('   {}: {}'.format(key, value.get(key, '')))
         elif prop == 'Track':
-            print('Music Info:')
-            for key in ('Title', 'Artist', 'Album'):
-                print('   {}: {}'.format(key, value.get(key, '')))
-
+            set_name(value.get('Title',''))
 def on_playback_control(fd, condition):
     str = fd.readline()
     if str.startswith('play'):
@@ -62,5 +68,39 @@ if __name__ == '__main__':
             bus_name='org.bluez',
             signal_name='PropertiesChanged',
             dbus_interface='org.freedesktop.DBus.Properties')
-    GLib.io_add_watch(sys.stdin, GLib.IO_IN, on_playback_control)
-    GLib.MainLoop().run()
+    # GLib.io_add_watch(sys.stdin, GLib.IO_IN, on_playback_control)
+    # GLib.MainLoop().run()
+    name = None
+    pos = 0
+    import pandas as pd
+    import numpy as np
+    from AudioAnalyzer import *
+    cube = np.zeros((6,6,6))
+    import time
+    start_time = time.time()
+    running = True
+    time_dif = time.time()-start_time
+    count = 1
+    cur_name = None
+    cur_pos = 0
+    frequences = np.arange(100, 8000, 1400)
+
+    while running:
+        time.sleep(0.5)
+        if cur_name != name:
+            cur_name = name
+            player = AudioAnalyzer(name)
+            player.set_time(0)
+        if cur_pos != pos:
+            cur_pos = pos
+            time_dif = cur_pos
+            start_time = time.time()
+        else:
+            time_dif = time.time() - start_time
+            player.set_time(time_dif)
+            np.roll(cube, -1, axis=0)
+            cube[5] = player.area_generation(frequences)
+            
+        
+        
+        

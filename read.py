@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from AudioAnalyzer import *
 # import librosa
 # avg_bass = 0
 # bass_trigger = -30
@@ -60,9 +61,18 @@ import numpy as np
 #             cube[5] = area
 #             print(cube)
 #             count += 0.2
-    
-from AudioAnalyzer import *
+import librosa  
+cube = np.zeros((6,6,6))
+import time
+start_time = time.time()
+running = True
+time_dif = time.time()-start_time
+count = 1
+frequences = np.arange(100, 8000, 1400)
+while running:
+    time.sleep(0.5)
 
-test = AudioAnalyzer('test')
-test.set_time(130)
-print(test.time)
+    test = AudioAnalyzer('test')
+    test.set_time(130)
+    np.roll(cube, -1, axis=0)
+    test.area_generation(np.arange(frequences)
