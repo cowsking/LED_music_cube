@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+
 class AudioAnalyzer:
 
     def __init__(self,name):
@@ -16,14 +17,10 @@ class AudioAnalyzer:
         self.time_index_ratio = len(self.times)/self.times[len(self.times) - 1]
         self.frequencies_index_ratio = len(self.frequencies)/self.frequencies[len(self.frequencies)-1]
 
-    def clamp(min_value, max_value, value):
-        if value < min_value:
-            return 0
-        if value > max_value:
-            return 6
+   
 
     def get_decibel(self,target_time, freq):
-        return self.spectrogram[int(self.freq * self.frequencies_index_ratio)][int(target_time * self.time_index_ratio)]
+        return self.spectrogram[int(freq * self.frequencies_index_ratio)][int(target_time * self.time_index_ratio)]
 
     def set_time(self,time):
         self.time = time
@@ -31,9 +28,20 @@ class AudioAnalyzer:
     def area_generation(self,frequencies):
         area = np.zeros((6,6))
         ind = 0
+        def clamp(min_value, max_value, value):
+            if value < min_value:
+                return 0
+            if value > max_value:
+                return 6
+            differences = max_value - min_value
+            res = int( -value / differences * 6)
+            return res        
         for freq in frequencies:
-            decibel = get_decibel(time_dif, freq)
-            num = clamp(-80, 0, decibel)
+            # print(freq)
+            decibel = self.get_decibel(self.time, freq)
+            
+            num = clamp(-80,0,decibel)
+            print(num)
             for i in range(num):
                 area[i][ind] = 1
             ind += 1
