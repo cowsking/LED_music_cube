@@ -9,7 +9,7 @@ for filename in file_list:
     os.mkdir(filename)
     time_series, sample_rate = librosa.load(filename+'.mp3')  # getting information from the file
 
-    # getting a matrix which contains amplitude values according to frequency and time indexes
+    # getting a matrix which cont   ains amplitude values according to frequency and time indexes
     stft = np.abs(librosa.stft(time_series, hop_length=512, n_fft=2048*4))
 
     spectrogram = librosa.amplitude_to_db(stft, ref=np.max)  # converting the matrix to decibel matrix
@@ -18,7 +18,7 @@ for filename in file_list:
     times = librosa.core.frames_to_time(np.arange(spectrogram.shape[1]), sr=sample_rate, hop_length=512, n_fft=2048*4)
     # print(frequencies)
     # print(spectrogram.shape)
-
+    frequences = np.arange(100, 8000, 1400)
     spectrogram = pd.DataFrame(spectrogram)
     spectrogram.to_csv(filename+'/spectrogram.csv', index = False, header=False)
     times = pd.DataFrame(times)
