@@ -2,9 +2,8 @@ import librosa
 import numpy as np
 import pandas as pd
 import os
-filename = "test.mp3"
 # analyzer.load(filename)
-file_list = ['test']
+file_list = ['Warriors']
 for filename in file_list:
     os.mkdir(filename)
     time_series, sample_rate = librosa.load(filename+'.mp3')  # getting information from the file
@@ -19,9 +18,14 @@ for filename in file_list:
     # print(frequencies)
     # print(spectrogram.shape)
     frequences = np.arange(100, 8000, 1400)
+    frequences = frequences * 0.37160998
+    frequences = [int(x) for x in list(frequences.astype(int))]
     spectrogram = pd.DataFrame(spectrogram)
+    print(spectrogram.shape)
+    spectrogram = spectrogram.iloc[frequences, :]
+    print(frequencies)
     spectrogram.to_csv(filename+'/spectrogram.csv', index = False, header=False)
     times = pd.DataFrame(times)
     times.to_csv(filename+'/times.csv', index = False,header=False)
-    frequencies = pd.DataFrame(frequencies)
-    frequencies.to_csv(filename+'/frequencies.csv', index = False,header=False)
+    # frequencies = pd.DataFrame(frequencies)
+    # frequencies.to_csv(filename+'/frequencies.csv', index = False,header=False)
